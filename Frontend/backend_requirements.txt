@@ -1,0 +1,213 @@
+RUVIA COSMETICS - BACKEND DEVELOPMENT GUIDE
+===========================================
+Hello! Welcome to the Ruvia Cosmetics project. 
+
+The frontend of this application is already built using Next.js (React). It is currently using "mock data" (fake data) to work. Your job is to build the actual backend server (using Node.js, Python, or PHP) and the Database to replace this fake data.
+
+This guide is written specifically to help you understand EXACTLY what the frontend expects. If you build these APIs with the exact JSON formats listed below, the frontend will connect seamlessly!
+
+---------------------------------------------------------
+SECTION 1: DATABASE MODELS (COLLECTIONS / TABLES)
+---------------------------------------------------------
+You will need to create the following database models. You can use MongoDB (Mongoose) or PostgreSQL/MySQL.
+
+1. USER MODEL
+-------------
+- _id (String / UUID)
+- name (String, required)
+- email (String, unique, required)
+- password (String, hashed, required)
+- phone (String)
+- addresses (Array of Objects):
+  - street (String)
+  - city (String)
+  - state (String)
+  - zipCode (String)
+
+2. PRODUCT MODEL
+----------------
+- _id (String / UUID)
+- id (String - optional frontend string ID like "prod_01")
+- name (String, required)
+- tag (String - e.g., "Best Seller")
+- price (Number, required)
+- originalPrice (Number)
+- rating (Number - e.g., 4.8)
+- reviewsCount (Number)
+- category (String - e.g., "Serums", "Cleansers")
+- image (String - URL to the image)
+- description (String)
+
+3. ORDER MODEL
+--------------
+- _id (String / UUID)
+- userId (Reference to User Model)
+- placedOn (Date)
+- status (String - e.g., "Processing", "Shipped", "Out for Delivery", "Delivered")
+- total (Number)
+- subtotal (Number)
+- gst (Number)
+- shippingFee (Number)
+- items (Array of Objects):
+  - productId (Reference to Product)
+  - name (String)
+  - price (Number)
+  - qty (Number)
+  - img (String)
+- shippingAddress (Object - from User Model)
+- trackingEvents (Array of Objects):
+  - status (String)
+  - timestamp (Date)
+
+4. REVIEW MODEL
+---------------
+- _id (String / UUID)
+- productId (Reference to Product)
+- userId (Reference to User)
+- name (String - name of user)
+- rating (Number - 1 to 5)
+- comment (String)
+- date (Date)
+
+5. RETURN REQUEST MODEL
+-----------------------
+- _id (String / UUID)
+- orderId (Reference to Order)
+- userId (Reference to User)
+- reason (String - e.g., "damaged", "wrong_item")
+- status (String - e.g., "Pending", "Approved", "Refunded")
+
+
+---------------------------------------------------------
+SECTION 2: API ENDPOINTS THE FRONTEND NEEDS
+---------------------------------------------------------
+
+Here are the exact APIs you need to build. 
+* Note: All APIs except Login/Register should require an Authentication Token (JWT) in the header: `Authorization: Bearer <token>`
+
+--- 1. AUTHENTICATION ---
+
+API 1: REGISTER USER
+- Method: POST
+- Route: /api/auth/register
+- Body Expected from Frontend:
+  {
+    "name": "John Doe",
+    "email": "john@example.com",
+    "password": "secretpassword"
+  }
+- Response Expected by Frontend:
+  {
+    "token": "jwt_string_here",
+    "user": { "id": "123", "name": "John Doe", "email": "john@example.com" }
+  }
+
+API 2: LOGIN USER
+- Method: POST
+- Route: /api/auth/login
+- Body Expected: { "email": "john@example.com", "password": "secretpassword" }
+- Response Expected: Same as Register.
+
+API 3: GET CURRENT USER
+- Method: GET
+- Route: /api/auth/me
+- Headers: Authorization required
+- Response Expected: { "id": "123", "name": "John Doe", "email": "john@example.com" }
+
+--- 2. PRODUCTS ---
+
+API 4: GET ALL PRODUCTS
+- Method: GET
+- Route: /api/products
+- Response Expected (Array of Objects):
+  [
+    {
+      "id": "prod_01",
+      "name": "Radiance Serum",
+      "price": 2499,
+      "category": "Serums",
+      "image": "/images/serum.png",
+      "rating": 4.8
+    }
+  ]
+
+API 5: GET SINGLE PRODUCT
+- Method: GET
+- Route: /api/products/:id
+- Response Expected: A single product object from the array above.
+
+--- 3. CART & WISHLIST ---
+
+API 6: SYNC CART
+- Method: POST
+- Route: /api/cart/sync
+- Description: The frontend stores cart in LocalStorage. When a user logs in, it will send the whole cart to the backend to save it in the database.
+- Body Expected: { "items": [ { "id": "prod_01", "qty": 2 } ] }
+- Response Expected: { "success": true, "cart": [...] }
+
+--- 4. ORDERS & CHECKOUT ---
+
+API 7: CREATE ORDER (CHECKOUT)
+- Method: POST
+- Route: /api/orders
+- Body Expected: 
+  {
+    "items": [ { "id": "prod_01", "qty": 1, "price": 2499 } ],
+    "shippingAddress": { "street": "123 Beauty Lane", ... },
+    "paymentMethod": "UPI"
+  }
+- Response Expected: { "success": true, "orderId": "ORD-12345" }
+
+API 8: GET USER ORDERS
+- Method: GET
+- Route: /api/orders
+- Response Expected:
+  [
+    {
+      "id": "ORD-12345",
+      "placedOn": "Oct 12, 2025",
+      "status": "Delivered",
+      "total": 3499,
+      "items": [ { "name": "Radiance Serum", "img": "...", "qty": 1 } ]
+    }
+  ]
+
+API 9: GET SINGLE ORDER DETAILS (FOR TRACKING)
+- Method: GET
+- Route: /api/orders/:id
+- Response Expected: The full order object including the `trackingEvents` array for the Tracking Modal timeline.
+
+--- 5. POST-PURCHASE (RETURNS & REVIEWS) ---
+
+API 10: INITIATE RETURN
+- Method: POST
+- Route: /api/orders/:id/return
+- Body Expected: { "reason": "damaged" }
+- Response Expected: { "success": true, "message": "Return initiated." }
+
+API 11: ADD PRODUCT REVIEW
+- Method: POST
+- Route: /api/products/:id/reviews
+- Body Expected: { "rating": 5, "comment": "Amazing texture!" }
+- Response Expected: { "success": true, "review": { "id": "rev_01", ... } }
+
+API 12: GET PRODUCT REVIEWS
+- Method: GET
+- Route: /api/products/:id/reviews
+- Response Expected: An array of review objects.
+
+
+---------------------------------------------------------
+SECTION 3: HOW TO INTEGRATE WITH THE FRONTEND
+---------------------------------------------------------
+Right now, the frontend uses mock data stored in `data/products.js` and local React State in `context/AuthContext.js` and `context/CartContext.js`.
+
+When you finish building an API (for example, the Login API):
+1. Go to `context/AuthContext.js` in the frontend code.
+2. Find the `login` function.
+3. Replace the fake `setTimeout` code with a real `fetch()` or `axios.post()` call to your `http://localhost:5000/api/auth/login` endpoint.
+4. Set the returned JWT token in LocalStorage and update the user state.
+
+You will follow this exact pattern for Orders (`app/orders/page.js`), Products (`app/shop/page.js`), and Reviews (`app/shop/[id]/page.js`).
+
+Good luck building the Ruvia Cosmetics backend!
