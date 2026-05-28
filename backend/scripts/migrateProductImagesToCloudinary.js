@@ -37,8 +37,9 @@ const run = async () => {
   console.log(`Found ${candidates.length} product(s) with local /images/* paths`);
   if (candidates.length === 0) process.exit(0);
 
-  // Repo layout: backend/ is sibling of Frontend/
-  const frontendPublic = path.resolve(__dirname, '..', '..', 'Frontend', 'public');
+  // Repo layout: backend/ is sibling of frontend code at repo root after the
+  // monorepo flatten, so public assets live at ../../public.
+  const frontendPublic = path.resolve(__dirname, '..', '..', 'public');
 
   let updated = 0;
   for (const p of candidates) {

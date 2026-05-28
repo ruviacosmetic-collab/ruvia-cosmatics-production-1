@@ -2,8 +2,9 @@ import type { NextConfig } from "next";
 import path from "path";
 import bundleAnalyzer from "@next/bundle-analyzer";
 
-// Keep tracing and workspace-root detection scoped to the Frontend folder.
-// This avoids dev warnings when multiple lockfiles exist on the machine.
+// Keep tracing and workspace-root detection scoped to the repo root so
+// Next.js doesn't try to walk up into the parent directory looking for a
+// shared lockfile when the user has multiple lockfiles on their machine.
 const nextConfig: NextConfig = {
   outputFileTracingRoot: path.join(__dirname),
 };

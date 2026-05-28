@@ -41,7 +41,7 @@ const run = async () => {
     .select('id name image')
     .lean();
 
-  const frontendPublic = path.resolve(__dirname, '..', '..', 'Frontend', 'public');
+  const frontendPublic = path.resolve(__dirname, '..', '..', 'public');
 
   let onDisk = 0;
   let missingOnDisk = 0;

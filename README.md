@@ -2,7 +2,7 @@
 
 Production-minded MERN-style e-commerce application with a **customer storefront** and an **admin portal**.
 
-This README is written in an “Amazon SDE” style: **clear architecture**, **service boundaries**, **tradeoffs**, and **how to run + operate** the system.
+This README is written in an "Amazon SDE" style: **clear architecture**, **service boundaries**, **tradeoffs**, and **how to run + operate** the system.
 
 ---
 
@@ -23,7 +23,7 @@ This README is written in an “Amazon SDE” style: **clear architecture**, **s
 ## High-level architecture
 
 ### Services
-1. **Frontend** (`Frontend/`)
+1. **Frontend** (repo root)
    - Next.js 16 (App Router), React 19, Tailwind
    - Runs at `http://localhost:3000` in dev
 2. **Backend API** (`backend/`)
@@ -34,10 +34,8 @@ This README is written in an “Amazon SDE” style: **clear architecture**, **s
 - Backend issues a JWT and sets an **httpOnly cookie** (`token`) on login/register.
 - Frontend calls authenticated endpoints with `credentials: "include"` so cookies are sent.
 
-> Note: Some legacy cleanup code removes old `localStorage` values, but the current intent is cookie-first auth.
-
 ### Deployment target (recommended)
-See [PRODUCTION_READINESS_PLAN.md](./PRODUCTION_READINESS_PLAN.md) for a full checklist targeting:
+See [deployment.md](./deployment.md) for a full guide targeting:
 - **Vercel** for the Next.js frontend
 - **Render** for the Express backend
 - **MongoDB Atlas** for the database
@@ -48,31 +46,30 @@ See [PRODUCTION_READINESS_PLAN.md](./PRODUCTION_READINESS_PLAN.md) for a full ch
 
 ## Repository layout
 
+The Next.js frontend lives at the repository root. The Express backend lives in `backend/`. They are deployed independently.
+
 ```
-ruvia-cosmatics-main/
-  Frontend/                 # Next.js app (App Router)
-    app/                    # Routes: /, /shop, /checkout, /orders, /admin/*
-    components/             # UI components + layout
-    context/                # Auth/Cart/Wishlist contexts (memoized)
-    lib/                    # apiClient + invoice pdf logic
-    public/                 # static images
-    next.config.ts
+ruvia-cosmatics/                # repo root = Next.js frontend
+  app/                          # Routes: /, /shop, /checkout, /orders, /admin/*
+  components/                   # UI components + layout
+  context/                      # Auth/Cart/Wishlist contexts (memoized)
+  lib/                          # apiClient + invoice pdf logic
+  public/                       # static images + brand artwork
+  next.config.ts
+  package.json
+
+  backend/                      # Express API service (deployed separately)
+    server.js                   # Express bootstrap + middlewares + route mounting
+    config/                     # DB + env validation + 3rd party config
+    routes/                     # Express routers
+    controllers/                # Request handlers / business logic
+    models/                     # Mongoose models
+    middleware/                 # auth/error/validation/sanitization
+    scripts/                    # seed/admin scripts
+    utils/                      # token/email helpers
     package.json
 
-  backend/                  # Express API service
-    server.js               # Express bootstrap + middlewares + route mounting
-    config/                 # DB + env validation + 3rd party config
-    routes/                 # Express routers
-    controllers/            # Request handlers / business logic
-    models/                 # Mongoose models
-    middleware/             # auth/error/validation/sanitization
-    scripts/                # seed/admin scripts
-    utils/                  # token/email helpers
-    package.json
-
-  docs/                     # prior audits and analysis docs
-  PRODUCTION_READINESS_PLAN.md
-  PM_CODEBASE_REVIEW.md
+  deployment.md
 ```
 
 ---
@@ -91,7 +88,7 @@ ruvia-cosmatics-main/
 ### Admin (portal)
 - Admin login (`/admin/login`)
 - Dashboard with charts (`/admin/dashboard`)
-- Products management (`/admin/products`)
+- Products management with multi-image upload (`/admin/products`)
 - Orders management + status updates (`/admin/orders`)
 - Reviews + returns pages (`/admin/reviews`, `/admin/returns`)
 
@@ -132,23 +129,23 @@ npm install
 npm run dev
 ```
 
-### 2) Frontend
+### 2) Frontend (from repo root)
 ```bash
-cd Frontend
 npm install
 npm run dev
 ```
 
 Open: http://localhost:3000
 
-> Dev note: first navigation to a route may show “Compiling …” (expected). Subsequent navigations should be fast.
+> Dev note: first navigation to a route may show "Compiling …" (expected). Subsequent navigations should be fast.
 
 ---
 
 ## Environment variables
 
-### Frontend (`Frontend/.env.local`)
+### Frontend (`.env.local` at repo root)
 - `NEXT_PUBLIC_API_URL=http://localhost:5000`
+- `NEXT_PUBLIC_SITE_URL=http://localhost:3000`
 
 ### Backend (`backend/.env`)
 See `backend/.env.example` for the full list.
@@ -159,12 +156,12 @@ See `backend/.env.example` for the full list.
 
 ### Phase 1 — dev turnaround
 - Switched dev to **Turbopack** (`npm run dev`) with a fallback `npm run dev:webpack`
-- Fixed Next.js “workspace root / multiple lockfiles” noise by pinning `outputFileTracingRoot`
+- Fixed Next.js "workspace root / multiple lockfiles" noise by pinning `outputFileTracingRoot`
 - Removed generated `.next/` artifacts from the repo folder
 
 ### Phase 2 — reduce route-level JS
 - **Admin Dashboard charts** (Recharts) now load via `next/dynamic()` (only when needed)
-- **Invoice PDF** (`jspdf`, `jspdf-autotable`) is lazy-loaded only when user clicks “Invoice”
+- **Invoice PDF** (`jspdf`, `jspdf-autotable`) is lazy-loaded only when user clicks "Invoice"
 
 ### Phase 3 — smoother UX
 - Added route-level `loading.js` skeletons for heavy routes (`/shop`, `/orders`, `/checkout`, and admin routes)
@@ -175,12 +172,17 @@ See `backend/.env.example` for the full list.
 - Added GitHub Actions CI build workflow (build-only)
 - Added backend `start`/`dev` scripts
 
+### Phase 5 — multi-image products + Cloudinary
+- Product schema gained `images: [String]` with a 5-image cap. Primary image stays in `image` for backwards compatibility.
+- Admin form supports drag-to-add multi-file upload, preview, removal, and "Set primary" toggle.
+- All product images stored in Cloudinary (`ruvia_products` folder); fallbacks for missing images render a neutral package icon, never a hardcoded local asset.
+
 ---
 
 ## Tradeoffs & known gaps
 
 ### 1) Dev speed vs production behavior
-- In dev, Next compiles routes on first hit. This is expected, but it can look like “slow rendering”.
+- In dev, Next compiles routes on first hit. This is expected, but it can look like "slow rendering".
 - Production builds are pre-optimized and do not pay the same compile cost.
 
 ### 2) Cart model (local-first)
@@ -200,19 +202,15 @@ Razorpay integration exists, but production hardening requires:
 - Server-authoritative amount derivation
 - Paid status transitions based only on verified events
 
-See [PRODUCTION_READINESS_PLAN.md](./PRODUCTION_READINESS_PLAN.md).
-
 ### 5) Lint/test maturity
 - Lint currently reports issues in some pages (strings, React purity warnings, etc.).
 - Test coverage is minimal.
-**Tradeoff:** moving fast vs stable release engineering; plan is to add smoke tests and backend integration tests.
 
 ---
 
 ## Production readiness
 
-- **Full plan:** [PRODUCTION_READINESS_PLAN.md](./PRODUCTION_READINESS_PLAN.md)
-- **PM audit / risk register:** [PM_CODEBASE_REVIEW.md](./PM_CODEBASE_REVIEW.md)
+- **Deployment guide:** [deployment.md](./deployment.md)
 
 ---
 
@@ -220,17 +218,12 @@ See [PRODUCTION_READINESS_PLAN.md](./PRODUCTION_READINESS_PLAN.md).
 
 ### 1) Frontend bundle analysis
 ```bash
-cd Frontend
 npm run analyze
 ```
-Use the report to identify large route chunks and candidates for dynamic import.
 
 ### 2) React render profiling
 - Use React DevTools Profiler on:
   - `/shop`, `/checkout`, `/orders`, `/admin/dashboard`
-- Look for:
-  - repeated rerenders of large trees
-  - expensive component commits
 
 ### 3) Next.js performance tracing (dev)
 - Chrome DevTools:
@@ -239,10 +232,9 @@ Use the report to identify large route chunks and candidates for dynamic import.
 
 ### 4) Backend latency measurement
 - Enable request timing logs by setting:
-  - `LOG_REQUESTS=true` (see middleware added in Phase 5 work)
+  - `LOG_REQUESTS=true`
 
 ---
 
 ## Contributing
-See `Frontend/CONTRIBUTING.md` for conventions (commit format, quality gates).
-
+See `CONTRIBUTING.md` for conventions (commit format, quality gates).
