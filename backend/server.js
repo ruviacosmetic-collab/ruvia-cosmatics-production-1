@@ -142,6 +142,10 @@ const corsOptions = {
     }
   },
   credentials: true,
+  // Expose the CSRF token to the SPA. Without this, the browser hides the
+  // header from JavaScript on cross-origin responses, so the SPA can't
+  // mirror it back on subsequent mutations and every CSRF check fails.
+  exposedHeaders: ['X-CSRF-Token'],
 };
 app.use(cors(corsOptions));
 
