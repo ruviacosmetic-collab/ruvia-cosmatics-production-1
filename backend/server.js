@@ -100,16 +100,45 @@ app.use(cookieParser());
 // Sanitize request body, query, and params to prevent NoSQL injection
 app.use(sanitizeRequest);
 
-// CORS whitelist
-const whitelist = (process.env.CORS_ORIGINS || 'http://localhost:3000').split(',').map(s => s.trim());
+// CORS allowlist.
+// `CORS_ORIGINS` is a comma-separated list of allowed origins. Each entry can
+// be a literal origin (`https://ruvia.example.com`) or a wildcard pattern
+// (`https://*.vercel.app`). Wildcards are matched as-glob: `*` matches any
+// non-`/`-containing substring, anchored to the full origin.
+const compileOriginMatcher = (entry) => {
+  const trimmed = String(entry || '').trim();
+  if (!trimmed) return null;
+  if (!trimmed.includes('*')) {
+    return (origin) => origin === trimmed;
+  }
+  // Escape regex specials except `*`, then turn `*` into `[^/]*`. Anchor.
+  const escaped = trimmed.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '[^/]*');
+  const re = new RegExp('^' + escaped + '$');
+  return (origin) => re.test(origin);
+};
+
+const allowedOriginMatchers = (process.env.CORS_ORIGINS || 'http://localhost:3000')
+  .split(',')
+  .map(compileOriginMatcher)
+  .filter(Boolean);
+
+const isOriginAllowed = (origin) => {
+  // Same-origin / curl / server-to-server requests have no Origin header —
+  // CORS doesn't apply to them. Allow through.
+  if (!origin) return true;
+  return allowedOriginMatchers.some((m) => m(origin));
+};
+
 const corsOptions = {
   origin: function (origin, callback) {
-    // allow requests with no origin (like curl, server-to-server)
-    if (!origin) return callback(null, true);
-    if (whitelist.indexOf(origin) !== -1) {
+    if (isOriginAllowed(origin)) {
       callback(null, true);
     } else {
-      callback(new Error('Not allowed by CORS'));
+      // Returning `false` (instead of an Error) tells the cors package to
+      // simply omit the Access-Control-Allow-Origin header. The browser
+      // already blocks the response, and we don't pollute server logs with
+      // 500 errors for routine cross-origin probes.
+      callback(null, false);
     }
   },
   credentials: true,
