@@ -234,6 +234,52 @@ app.get('/', (req, res) => {
   res.send('Ruvia Cosmetics API is running...');
 });
 
+// Diagnostic: try to send a real email and return the SMTP result.
+// Hardened: only sends to EMAIL_SUPPORT_EMAIL so it can't be abused as a relay.
+// Remove this endpoint once email delivery is confirmed working.
+app.get('/api/email-diag', async (req, res) => {
+  const sendEmail = require('./utils/sendEmail');
+  const config = {
+    EMAIL_HOST: process.env.EMAIL_HOST || null,
+    EMAIL_PORT: process.env.EMAIL_PORT || null,
+    EMAIL_USER: process.env.EMAIL_USER || null,
+    EMAIL_PASS_set: !!process.env.EMAIL_PASS,
+    EMAIL_PASS_length: process.env.EMAIL_PASS ? process.env.EMAIL_PASS.length : 0,
+    EMAIL_ENABLED: process.env.EMAIL_ENABLED || null,
+    EMAIL_FROM_NAME: process.env.EMAIL_FROM_NAME || null,
+    EMAIL_FROM_EMAIL: process.env.EMAIL_FROM_EMAIL || null,
+    EMAIL_REPLY_TO: process.env.EMAIL_REPLY_TO || null,
+    EMAIL_SUPPORT_EMAIL: process.env.EMAIL_SUPPORT_EMAIL || null,
+  };
+
+  const recipient = process.env.EMAIL_SUPPORT_EMAIL;
+  if (!recipient) {
+    return res.status(400).json({ ok: false, config, error: 'EMAIL_SUPPORT_EMAIL not set' });
+  }
+
+  try {
+    await sendEmail({
+      email: recipient,
+      subject: 'Ruvia email diagnostic',
+      message: 'If you can read this, SMTP is working.',
+      html: '<p>If you can read this, SMTP is working.</p>',
+    });
+    return res.json({ ok: true, sentTo: recipient, config });
+  } catch (err) {
+    return res.status(500).json({
+      ok: false,
+      config,
+      error: {
+        message: err && err.message,
+        code: err && err.code,
+        responseCode: err && err.responseCode,
+        command: err && err.command,
+        response: err && err.response,
+      },
+    });
+  }
+});
+
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
