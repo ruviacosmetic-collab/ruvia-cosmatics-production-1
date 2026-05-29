@@ -1,4 +1,5 @@
 const nodemailer = require('nodemailer');
+const https = require('https');
 
 let cachedTransporter = null;
 
@@ -21,6 +22,73 @@ const withTimeout = (promise, ms, label = 'operation') => {
     }, ms);
   });
   return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
+};
+
+/**
+ * Send an email via Brevo's HTTPS REST API (port 443) instead of SMTP.
+ *
+ * Required when the host blocks outbound SMTP (Render, some Vercel plans, etc).
+ * Activates automatically when BREVO_API_KEY is set; falls back to SMTP otherwise.
+ *
+ * Docs: https://developers.brevo.com/reference/sendtransacemail
+ */
+const sendViaBrevoApi = (mailOptions) => {
+  const apiKey = process.env.BREVO_API_KEY;
+  // Parse "Name <email>" or just "email"
+  const fromMatch = String(mailOptions.from || '').match(/^(.*?)\s*<(.+)>$/);
+  const senderName = fromMatch ? fromMatch[1].trim() : (process.env.EMAIL_FROM_NAME || 'Ruvia');
+  const senderEmail = fromMatch ? fromMatch[2].trim() : (mailOptions.from || process.env.EMAIL_FROM_EMAIL);
+
+  const payload = JSON.stringify({
+    sender: { name: senderName, email: senderEmail },
+    to: [{ email: mailOptions.to }],
+    subject: mailOptions.subject,
+    htmlContent: mailOptions.html || `<p>${mailOptions.text || ''}</p>`,
+    textContent: mailOptions.text || undefined,
+    replyTo: mailOptions.replyTo ? { email: mailOptions.replyTo } : undefined,
+  });
+
+  return new Promise((resolve, reject) => {
+    const req = https.request(
+      {
+        method: 'POST',
+        hostname: 'api.brevo.com',
+        path: '/v3/smtp/email',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'api-key': apiKey,
+          'Content-Length': Buffer.byteLength(payload),
+        },
+        timeout: 10000,
+      },
+      (res) => {
+        let body = '';
+        res.on('data', (chunk) => (body += chunk));
+        res.on('end', () => {
+          if (res.statusCode >= 200 && res.statusCode < 300) {
+            try {
+              resolve(JSON.parse(body));
+            } catch (_e) {
+              resolve({ raw: body });
+            }
+          } else {
+            const err = new Error(`Brevo API ${res.statusCode}: ${body}`);
+            err.code = 'BREVO_API_ERROR';
+            err.responseCode = res.statusCode;
+            err.response = body;
+            reject(err);
+          }
+        });
+      }
+    );
+    req.on('error', reject);
+    req.on('timeout', () => {
+      req.destroy(new Error('Brevo API request timed out'));
+    });
+    req.write(payload);
+    req.end();
+  });
 };
 
 const getTransporter = () => {
@@ -50,15 +118,6 @@ const sendEmail = async (options) => {
   const enabled = String(process.env.EMAIL_ENABLED || 'true').toLowerCase() !== 'false';
   if (!enabled) return;
 
-  // Create a transporter
-  const transporter = getTransporter();
-  if (!transporter) {
-    // Don't throw — email should be best-effort
-    console.warn('Email transporter not configured (missing EMAIL_HOST/EMAIL_PORT/EMAIL_USER/EMAIL_PASS). Skipping email.');
-    return;
-  }
-
-  // Define email options
   const fromName = process.env.EMAIL_FROM_NAME || 'Ruvia';
   const fromEmail = process.env.EMAIL_FROM_EMAIL || 'info@ruviacosmetics.com';
   const mailOptions = {
@@ -67,11 +126,37 @@ const sendEmail = async (options) => {
     to: options.email,
     subject: options.subject,
     text: options.message,
-    html: options.html, // Optional HTML version
+    html: options.html,
   };
 
-  // Send the email with a 5s timeout to prevent slow SMTP from holding
-  // request handlers (Requirement 21).
+  // Prefer Brevo HTTPS API if BREVO_API_KEY is configured (works on hosts that
+  // block outbound SMTP like Render). Falls back to SMTP otherwise.
+  if (process.env.BREVO_API_KEY) {
+    try {
+      await withTimeout(sendViaBrevoApi(mailOptions), EMAIL_SEND_TIMEOUT_MS * 2, 'brevoApiSend');
+      return;
+    } catch (err) {
+      if (err && (err.code === 'TIMEOUT' || err.name === 'TimeoutError')) {
+        console.warn('Brevo API send timed out:', err.message);
+        return;
+      }
+      console.error(
+        'Brevo API send failed:',
+        (err && (err.responseCode || err.code || '')) +
+          ' ' +
+          (err && err.message ? err.message : err)
+      );
+      throw err;
+    }
+  }
+
+  // Fallback: SMTP transport
+  const transporter = getTransporter();
+  if (!transporter) {
+    console.warn('Email transporter not configured (missing BREVO_API_KEY or EMAIL_HOST/EMAIL_PORT/EMAIL_USER/EMAIL_PASS). Skipping email.');
+    return;
+  }
+
   try {
     await withTimeout(
       transporter.sendMail(mailOptions),
@@ -81,16 +166,8 @@ const sendEmail = async (options) => {
   } catch (err) {
     if (err && (err.code === 'TIMEOUT' || err.name === 'TimeoutError')) {
       console.warn('Email send timed out:', err.message);
-      // Best-effort emails: swallow timeouts so callers (registration,
-      // password reset, etc.) are not blocked by slow SMTP.
       return;
     }
-    // Surface SMTP auth and connection errors loudly. These are the most
-    // common reason a "successful" form submit produces no email
-    // (e.g. Brevo IP allowlist, expired credentials, rate limit). The
-    // caller is expected to wrap this in its own try/catch since email
-    // delivery is best-effort, but a clear log line is essential so the
-    // operator can diagnose silent delivery failures quickly.
     console.error(
       'Email send failed:',
       (err && (err.responseCode || err.code || '')) +
