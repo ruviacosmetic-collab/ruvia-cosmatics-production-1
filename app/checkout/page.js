@@ -319,9 +319,9 @@ export default function CheckoutPage() {
   const localSubtotal = getCartTotal();
   const subtotal = quote?.subtotal ?? localSubtotal;
   const discount = quote?.discount ?? 0;
-  const gst = quote?.gst ?? Math.round(Math.max(0, subtotal - discount) * 0.18);
-  const shippingFee = quote?.shippingFee ?? (Math.max(0, subtotal - discount) > 500 ? 0 : 50);
-  const finalTotal = quote?.total ?? (Math.max(0, subtotal - discount) + gst + shippingFee);
+  const gst = quote?.gst ?? Math.round(Math.max(0, subtotal - discount) * 0.0);
+  const shippingFee = quote?.shippingFee ?? (Math.max(0, subtotal - discount) > 500 ? 0 : 25);
+  const finalTotal = quote?.total ?? (Math.max(0, subtotal - discount));
 
   const applyCoupon = async (codeOverride) => {
     const code = String(codeOverride ?? couponCode ?? "").trim();
@@ -897,10 +897,10 @@ export default function CheckoutPage() {
                     <span>- ₹{discount.toLocaleString('en-IN')}</span>
                   </div>
                 ) : null}
-                <div className="flex justify-between text-xs font-medium text-brand-dark/60">
+                 {/*<div className="flex justify-between text-xs font-medium text-brand-dark/60">
                   <span>GST (18%)</span>
                   <span>₹{gst.toLocaleString('en-IN')}</span>
-                </div>
+                </div>  */}
                 <div className="flex justify-between text-xs font-medium text-brand-dark/60">
                   <span>Shipping</span>
                   <span className={shippingFee === 0 ? "text-[#52C234] font-bold tracking-widest uppercase" : "text-brand-dark font-bold"}>
