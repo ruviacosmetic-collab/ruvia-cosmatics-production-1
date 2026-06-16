@@ -321,7 +321,7 @@ export default function CheckoutPage() {
   const discount = quote?.discount ?? 0;
   const gst = quote?.gst ?? Math.round(Math.max(0, subtotal - discount) * 0.0);
   const shippingFee = quote?.shippingFee ?? (Math.max(0, subtotal - discount) > 500 ? 0 : 25);
-  const finalTotal = quote?.total ?? (Math.max(0, subtotal - discount));
+  const finalTotal = quote?.total ?? (Math.max(0, subtotal - discount) + shippingFee);
 
   const applyCoupon = async (codeOverride) => {
     const code = String(codeOverride ?? couponCode ?? "").trim();
