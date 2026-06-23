@@ -589,7 +589,7 @@ export default function Home() {
               evenly when the source ratio isn't an exact match.
             */}
             <img
-              src="/images/founder.jpeg"
+              src="/images/founder1.jpeg``"
               alt="Dr. Chitra Bhati, Founder of Ruvia Cosmetics"
               className="w-full h-full object-cover object-center"
             />
