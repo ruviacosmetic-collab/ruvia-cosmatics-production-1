@@ -683,7 +683,7 @@ export default function CheckoutPage() {
                       )}
                     </div>
 
-                    {/* COD Option — temporarily hidden while we don't fulfil
+                    COD Option — temporarily hidden while we don't fulfil
                         cash-on-delivery shipments. Uncomment to re-enable.
                     <div>
                       <label className={`flex items-center p-5 cursor-pointer hover:bg-[#FDFBF7] transition-colors ${paymentMethod === 'cod' ? 'bg-brand-pink/10' : ''}`}>
@@ -702,7 +702,7 @@ export default function CheckoutPage() {
                         </div>
                       )}
                     </div>
-                    */}
+                   
 
                   </div>
                 </div>
