@@ -546,7 +546,7 @@ export default function Home() {
           <AnimatedHeading className="font-serif text-4xl md:text-6xl font-bold tracking-tight leading-[1.1] mb-8 text-center justify-center text-brand-dark">Your Serum Evaporates. Ours Doesn't.</AnimatedHeading>
 
           <div className="relative w-full max-w-6xl aspect-15/10 rounded-[3rem] md:rounded-[5rem] overflow-hidden shadow-2xl border-8 border-brand-beige mb-10 group soft-glow">
-            <img src="/images/lab.png" alt="Laboratory" className="w-full h-full object-cover transition-transform duration-[4s] group-hover:scale-105" />
+            <img src="/images/effect.png" alt="Laboratory" className="w-full h-full object-cover transition-transform duration-[4s] group-hover:scale-105" />
             <div className="absolute inset-0 bg-brand-dark/10 group-hover:bg-transparent transition-all duration-1000" />
           </div>
 
