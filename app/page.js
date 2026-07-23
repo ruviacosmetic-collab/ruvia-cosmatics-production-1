@@ -546,7 +546,7 @@ export default function Home() {
           <AnimatedHeading className="font-serif text-4xl md:text-6xl font-bold tracking-tight leading-[1.1] mb-8 text-center justify-center text-brand-dark">Your Serum Evaporates. Ours Doesn't.</AnimatedHeading>
 
           <div className="relative w-full max-w-6xl aspect-15/10 rounded-[3rem] md:rounded-[5rem] overflow-hidden shadow-2xl border-8 border-brand-beige mb-10 group soft-glow">
-            <img src="public/images/effect.png" alt="Laboratory" className="w-full h-full object-cover transition-transform duration-[4s] group-hover:scale-105" />
+            <img src="/images/effect.png" alt="Laboratory" className="w-full h-full object-cover transition-transform duration-[4s] group-hover:scale-105" />
             <div className="absolute inset-0 bg-brand-dark/10 group-hover:bg-transparent transition-all duration-1000" />
           </div>
 
@@ -589,7 +589,7 @@ export default function Home() {
               evenly when the source ratio isn't an exact match.
             */}
             <img
-              src="public/images/sss.png"
+              src="/images/newfounder.png"
               alt="Dr. Chitra Bhati, Founder of Ruvia Cosmetics"
               className="w-full h-full object-cover object-center"
             />
@@ -601,7 +601,7 @@ export default function Home() {
               "You've wasted money on products made for European weather. Your skin lives in Indian humidity, Delhi pollution, hard water, and 40°C summers. That's why nothing worked. We built every Ruvia formula inside India, tested on 500+ Indian women, for the exact conditions your skin faces every single day."
             </p>
             <div className="grid grid-cols-2 gap-10">
-              <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-4">/Users/ravikumarsaini/Downloads/newfounder.png
                 <CheckCircle2 className="text-brand-olive" size={24} />
                 <span className="text-[10px] font-black tracking-widest uppercase">Tested on Indian Skin Types</span>
               </div>
