@@ -770,7 +770,7 @@ export default function Home() {
             <div className="absolute inset-0 bg-brand-pink/5 blur-[120px] rounded-full pointer-events-none" />
 
             <div className="group relative aspect-square rounded-4xl md:rounded-[4rem] overflow-hidden shadow-xl transition-all duration-700 hover:-translate-y-4">
-              <img src="/images/social1.jpg" alt="Social 1" className="w-full h-full object-cover transition-transform duration-[2s] group-hover:scale-110" />
+              <img src="/images/resul.jpeg" alt="Social 1" className="w-full h-full object-cover transition-transform duration-[2s] group-hover:scale-110" />
               <div className="absolute inset-0 bg-brand-dark/40 opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-center justify-center backdrop-blur-sm">
                 <span className="text-white text-[10px] font-black tracking-widest uppercase">View Ritual</span>
               </div>
@@ -784,7 +784,7 @@ export default function Home() {
             </div>
 
             <div className="group relative aspect-square rounded-4xl md:rounded-[4rem] overflow-hidden shadow-xl transition-all duration-700 hover:-translate-y-4">
-              <img src="/images/resul.jpeg" alt="Social 3" className="w-full h-full object-cover transition-transform duration-[2s] group-hover:scale-110" />
+              <img src="/images/social1.jpg" alt="Social 3" className="w-full h-full object-cover transition-transform duration-[2s] group-hover:scale-110" />
               <div className="absolute inset-0 bg-brand-dark/40 opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-center justify-center backdrop-blur-sm">
                 <span className="text-white text-[10px] font-black tracking-widest uppercase">The Result</span>
               </div>
