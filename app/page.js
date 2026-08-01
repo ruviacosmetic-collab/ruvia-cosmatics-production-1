@@ -601,7 +601,7 @@ export default function Home() {
               "You've wasted money on products made for European weather. Your skin lives in Indian humidity, Delhi pollution, hard water, and 40°C summers. That's why nothing worked. We built every Ruvia formula inside India, tested on 500+ Indian women, for the exact conditions your skin faces every single day."
             </p>
             <div className="grid grid-cols-2 gap-10">
-              <div className="flex flex-col gap-4">/Users/ravikumarsaini/Downloads/newfounder.png
+              <div className="flex flex-col gap-4">
                 <CheckCircle2 className="text-brand-olive" size={24} />
                 <span className="text-[10px] font-black tracking-widest uppercase">Tested on Indian Skin Types</span>
               </div>
